@@ -239,31 +239,33 @@ def delete_character(rec_id):
     try:
         df = read_csv_safe(CSV_PATH)
 
-        # confirm id column exists
+        # Make sure 'id' column exists
         if "id" not in df.columns:
             return jsonify({"error": "CSV missing id column"}), 500
 
-        # locate record
+        # Find the matching record
         matches = df.index[df["id"].astype(str) == str(rec_id)].tolist()
         if not matches:
             return jsonify({"error": f"Character with id {rec_id} not found"}), 404
 
-        # drop the row safely
+        # Drop the record
         df = df.drop(index=matches[0]).reset_index(drop=True)
 
-        # ✅ Only reassign ids if column already exists
-        if "id" in df.columns:
-            df["id"] = [str(i + 1) for i in range(len(df))]
-        else:
-            df.insert(0, "id", [str(i + 1) for i in range(len(df))])
+        # ✅ DO NOT INSERT A NEW ID COLUMN
+        # Instead, just overwrite the values in the existing 'id' column
+        df["id"] = [str(i + 1) for i in range(len(df))]
 
-        # Save changes
+        # Save the updated DataFrame
         write_csv_safe(df, CSV_PATH)
+
         return "", 204
 
     except Exception as e:
         logger.exception("Failed to persist deletion")
-        return jsonify({"error": "Failed to persist deletion", "details": str(e)}), 500
+        return jsonify({
+            "error": "Failed to persist deletion",
+            "details": str(e)
+        })
 
 # Health check
 @app.route("/health", methods=["GET"])
