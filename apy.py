@@ -243,7 +243,7 @@ def delete_character(rec_id):
         if "id" not in df.columns:
             return jsonify({"error": "CSV missing id column"}), 500
 
-        # locate row
+        # locate record
         matches = df.index[df["id"].astype(str) == str(rec_id)].tolist()
         if not matches:
             return jsonify({"error": f"Character with id {rec_id} not found"}), 404
@@ -251,17 +251,19 @@ def delete_character(rec_id):
         # drop the row safely
         df = df.drop(index=matches[0]).reset_index(drop=True)
 
-        # keep same ids (no renumber)
-        # or, if you prefer tidy numbering:
-        # df["id"] = [str(i + 1) for i in range(len(df))]
+        # ✅ Only reassign ids if column already exists
+        if "id" in df.columns:
+            df["id"] = [str(i + 1) for i in range(len(df))]
+        else:
+            df.insert(0, "id", [str(i + 1) for i in range(len(df))])
 
+        # Save changes
         write_csv_safe(df, CSV_PATH)
         return "", 204
 
     except Exception as e:
-        logger.exception("DELETE failed")
-        # return visible error for debugging
-        return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
+        logger.exception("Failed to persist deletion")
+        return jsonify({"error": "Failed to persist deletion", "details": str(e)}), 500
 
 # Health check
 @app.route("/health", methods=["GET"])
