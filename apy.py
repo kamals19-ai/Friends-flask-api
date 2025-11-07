@@ -236,24 +236,32 @@ def delete_character(rec_id):
     DELETE /characters/<id>
     Returns 204 on success (no content)
     """
-    df = read_csv_safe(CSV_PATH)
     try:
-        idx, _ = find_record_by_id(df, str(rec_id))
-    except KeyError:
-        return jsonify({"error": f"Character with id {rec_id} not found"}), 404
+        df = read_csv_safe(CSV_PATH)
 
-    # drop the row and reset index
-    df = df.drop(index=idx).reset_index(drop=True)
-    # Option A: keep original ids if they exist
-    if "id" in df.columns:
-        df["id"] = [str(i + 1) for i in range(len(df))]
+        # confirm id column exists
+        if "id" not in df.columns:
+            return jsonify({"error": "CSV missing id column"}), 500
 
-    try:
+        # locate row
+        matches = df.index[df["id"].astype(str) == str(rec_id)].tolist()
+        if not matches:
+            return jsonify({"error": f"Character with id {rec_id} not found"}), 404
+
+        # drop the row safely
+        df = df.drop(index=matches[0]).reset_index(drop=True)
+
+        # keep same ids (no renumber)
+        # or, if you prefer tidy numbering:
+        # df["id"] = [str(i + 1) for i in range(len(df))]
+
         write_csv_safe(df, CSV_PATH)
         return "", 204
-    except Exception:
-        logger.exception("Failed to persist deletion")
-        return jsonify({"error": "Failed to persist deletion"}), 500
+
+    except Exception as e:
+        logger.exception("DELETE failed")
+        # return visible error for debugging
+        return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
 
 # Health check
 @app.route("/health", methods=["GET"])
