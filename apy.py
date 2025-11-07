@@ -242,14 +242,12 @@ def delete_character(rec_id):
     except KeyError:
         return jsonify({"error": f"Character with id {rec_id} not found"}), 404
 
-    # drop the row
+    # drop the row and reset index
     df = df.drop(index=idx).reset_index(drop=True)
+    # Option A: keep original ids if they exist
+    if "id" in df.columns:
+        df["id"] = [str(i + 1) for i in range(len(df))]
 
-    # Ensure ids remain unique; keep original ids? We'll remap ids to 1..N to keep CSV tidy.
-    df.insert(0, "id", [str(i + 1) for i in range(len(df))])
-    # If there were other columns named id due to insertion above, drop duplicates
-    # (Simplify: after resetting we keep 'id' as the first column)
-    # persist
     try:
         write_csv_safe(df, CSV_PATH)
         return "", 204
