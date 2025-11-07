@@ -1,16 +1,3 @@
-"""
-Flask REST API for friends_data.csv
-Features:
-- Safe CSV read/write (atomic write + in-process lock)
-- Pagination & search
-- Error handling with proper HTTP codes
-- Logging (file + console)
-- Endpoints:
-    GET    /characters?page=1&per_page=10
-    GET    /characters/search?first_name=Phoebe
-    PUT    /characters/<int:id>
-    DELETE /characters/<int:id>
-"""
 
 import os
 import tempfile
